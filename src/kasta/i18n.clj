@@ -1,4 +1,5 @@
 (ns kasta.i18n
+  (:import [java.nio.file Paths])
   (:require [clojure.string :as str]
 
             [kasta.i18n.scan :as scan]
@@ -31,7 +32,7 @@
 (def read-translations
   (memoize
     (fn [lang]
-      (po/read-po (str PO-DIR lang ".po")))))
+      (po/read-po (Paths/get PO-DIR (into-array [(str lang ".po")]))))))
 
 
 (defn get-trans [lang input]
