@@ -1,4 +1,4 @@
-(defproject ua.kasta/i18n "1.0.1"
+(defproject ua.kasta/i18n "1.0.2"
   :description "Internationalization lib"
   :url "https://github.com/kasta-ua/i18n"
   :license {:name "EPL-2.0"

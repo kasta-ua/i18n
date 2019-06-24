@@ -32,7 +32,8 @@
 (def read-translations
   (memoize
     (fn [lang]
-      (po/read-po (Paths/get PO-DIR (into-array [(str lang ".po")]))))))
+      (let [path (Paths/get PO-DIR (into-array [(str lang ".po")]))]
+        (po/read-po (str path))))))
 
 
 (defn get-trans [lang input]
