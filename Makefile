@@ -1,0 +1,2 @@
+pub:
+	lein deploy clojars
