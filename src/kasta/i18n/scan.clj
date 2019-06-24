@@ -160,13 +160,14 @@
 
 (def msgmerge-path
   (delay
-    (reduce (fn [_ x]
-              (when (.exists (io/file x))
-                (reduced x)))
-      nil
-      ["/usr/local/opt/gettext/bin/msgmerge"
-       "/usr/local/bin/msgmerge"
-       "/usr/bin/msgmerge"])))
+    (or (reduce (fn [_ x]
+                  (when (.exists (io/file x))
+                    (reduced x)))
+          nil
+          ["/usr/local/opt/gettext/bin/msgmerge"
+           "/usr/local/bin/msgmerge"
+           "/usr/bin/msgmerge"])
+        "msgmerge")))
 
 (defn file->path [file]
   (if (instance? File file)
@@ -175,13 +176,16 @@
 
 
 (defn msgmerge! [po-target pot-source]
-  (shell/sh @msgmerge-path "--update" "--backup=off"
-    (file->path po-target)
-    (file->path pot-source)))
+  (.exec (Runtime/getRuntime)
+    (into-array [@msgmerge-path
+                 "--update"
+                 "--backup=off"
+                 (file->path po-target)
+                 (file->path pot-source)])))
 
 
 (defn update-codebase! [dirs po-target]
-  (let [tmp (File/createTempFile "template" "pot")]
+  (let [tmp (File/createTempFile "template" ".pot")]
     (scan-codebase! dirs {:template-file tmp})
     (msgmerge! po-target tmp)
     (io/delete-file tmp)))
