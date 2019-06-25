@@ -6,17 +6,18 @@
 ;;; Utils
 
 (defn fmt-escaped [value]
-  (-> (pr-str value)
-      (str/replace #"\"" "`")))
+  (if (string? value)
+    value
+    (str "~" (pr-str value))))
 
 
 (defn read-escaped [value]
   ;; this looks like double-encoding since it is: first we generate string by
   ;; `fmt-escaped`, and then it's put in double-quotes in `gen-po`
-  (let [value (if (= \" (first value) (nth value (dec (count value))))
-                (edn/read-string value)
-                value)]
-    (edn/read-string (str/replace value #"`" "\""))))
+  (let [value (edn/read-string value)]
+    (if (= \~ (first value))
+      (edn/read-string (subs value 1))
+      value)))
 
 
 ;;; Generation
@@ -45,7 +46,7 @@ msgstr \"\"
             (when (:notes entry)
               (format "#. %s\n" (:notes entry)))
             (format "#: %s\n" filename)
-            (format "msgid \"%s\"\n" (fmt-escaped (:value entry)))
+            (format "msgid %s\n" (pr-str (fmt-escaped (:value entry))))
             "msgstr \"\"\n"))))))
 
 
