@@ -2,7 +2,6 @@
   (:import [java.io File])
   (:require [clojure.walk :as walk]
             [clojure.java.io :as io]
-            [clojure.java.shell :as shell]
             [clojure.spec.alpha :as s]
             [cljs.core.specs.alpha :as sa]
 
@@ -158,16 +157,29 @@
 
 ;;; Msgmerge
 
-(def msgmerge-path
-  (delay
-    (or (reduce (fn [_ x]
-                  (when (.exists (io/file x))
-                    (reduced x)))
+(defn find-exe [exe]
+  (or (reduce (fn [_ path]
+                (when (.exists (io/file (str path exe)))
+                    (reduced (str path exe))))
           nil
-          ["/usr/local/opt/gettext/bin/msgmerge"
-           "/usr/local/bin/msgmerge"
-           "/usr/bin/msgmerge"])
-        "msgmerge")))
+          ["/usr/local/opt/gettext/bin/"
+           "/usr/local/bin/"
+           "/usr/bin/"])
+      exe))
+
+
+(defn exec! [& cmd-and-args]
+  (let [proc (.exec (Runtime/getRuntime)
+               (into-array String cmd-and-args))]
+    (.waitFor proc)
+    (if (pos? (.exitValue proc))
+      (throw (ex-info (format "%s exited with error code %s"
+                        (first cmd-and-args)
+                        (.exitValue proc))
+               {:stdout (slurp (.getInputStream proc))
+                :stderr (slurp (.getErrorStream proc))}))
+      (slurp (.getInputStream proc)))))
+
 
 (defn file->path [file]
   (if (instance? File file)
@@ -175,18 +187,26 @@
     file))
 
 
+(def msgmerge-path (delay (find-exe "msgmerge")))
+(def msguniq-path (delay (find-exe "msguniq")))
+
+
 (defn msgmerge! [po-target pot-source]
-  (.exec (Runtime/getRuntime)
-    (into-array [@msgmerge-path
-                 "--update"
-                 "--backup=off"
-                 (file->path po-target)
-                 (file->path pot-source)])))
+  (exec! @msgmerge-path
+    "--update" "--backup=off" (file->path po-target) (file->path pot-source)))
+
+
+(defn msguniq! [pot-source]
+  (let [path (file->path pot-source)
+        dest (str path ".1")]
+    (exec! @msguniq-path "-o" dest path)
+    (.renameTo (io/file dest) (io/file pot-source))))
 
 
 (defn update-codebase! [dirs po-target]
   (let [tmp (File/createTempFile "template" ".pot")]
     (scan-codebase! dirs {:template-file tmp})
+    (msguniq! tmp)
     (msgmerge! po-target tmp)
     (io/delete-file tmp)))
 
