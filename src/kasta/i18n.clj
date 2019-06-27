@@ -37,7 +37,7 @@
 
 
 (defn get-trans [lang input]
-  (or (get (read-translations lang) input)
+  (or (not-empty (get (read-translations lang) input))
       input))
 
 

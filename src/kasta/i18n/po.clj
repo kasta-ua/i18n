@@ -8,15 +8,14 @@
 ;;; Utils
 
 (defn fmt-escaped [value]
-  (if (string? value)
-    value
-    (str "~" (pr-str value))))
+  (cond
+    (nil? value)    value
+    (string? value) value
+    :else           (str "~" (pr-str value))))
 
 
 (defn read-escaped [value]
-  ;; this looks like double-encoding since it is: first we generate string by
-  ;; `fmt-escaped`, and then it's put in double-quotes in `gen-po`
-  (let [value (edn/read-string value)]
+  (not-empty
     (if (= \~ (first value))
       (edn/read-string (subs value 1))
       value)))
@@ -75,7 +74,7 @@ msgstr \"\"
   (fn [[line & rest]]
     (let [[multiline-values rest] (split-with quoted-string? rest)
           values                  (->> (concat [line] multiline-values)
-                                       (remove empty-str?))]
+                                       (map edn/read-string))]
       [key (read-escaped (str/join values)) rest])))
 
 
