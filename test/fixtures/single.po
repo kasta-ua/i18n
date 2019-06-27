@@ -1,0 +1,4 @@
+#: src/mk/fe/common/header.cljc
+msgid "~(utils/plural warehouses \" отделение\" \" отделения\" \" отделений\")"
+msgstr ""
+"~(utils/plural warehouses \" відділення\" \" відділення\" \" відділень\")"

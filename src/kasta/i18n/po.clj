@@ -1,4 +1,6 @@
 (ns kasta.i18n.po
+  "Reading PO files originally from
+  https://github.com/brightin/pottery/blob/master/src/pottery/po.clj"
   (:import [java.time Instant])
   (:require [clojure.string :as str]
             [clojure.edn :as edn]))
@@ -52,15 +54,56 @@ msgstr \"\"
 
 ;;; Reading
 
+(defn- quoted-string? [line]
+  (and (str/starts-with? line "\"") (str/ends-with? line "\"")))
+
+
+(defn- read-quoted-string [line]
+  (str/replace
+   (subs line 1 (dec (count line)))
+   #"\\n" "\n"))
+
+
+(defn empty-str? [s]
+  (= s "\"\""))
+
+
+(defn- tag-parser
+  "Creates a fn that takes remaining lines and returns a tuple with
+  the key, value and and the remaining unparsed lines."
+  [key]
+  (fn [[line & rest]]
+    (let [[multiline-values rest] (split-with quoted-string? rest)
+          values                  (->> (concat [line] multiline-values)
+                                       (remove empty-str?))]
+      [key (read-escaped (str/join values)) rest])))
+
+
+(defn default-parser [lines]
+  [nil nil (drop 1 lines)])
+
+
+(def PO_TAGS
+  {"msgid"        (tag-parser ::msgid)
+   "msgid_plural" (tag-parser ::msgid-plural)
+   "msgstr"       (tag-parser ::msgstr)
+   "msgstr[0]"    (tag-parser ::msgstr)
+   "msgstr[1]"    (tag-parser ::msgstr-plural)})
+
+
 (defn parse-block
   "Parses a block in a PO file, and returns an object with the msgid,
   msgstr and possible plural versions of the strings."
-  [block]
-  (let [data (->> (map str/trim (str/split-lines block))
-                  (map #(str/split % #"\s" 2))
-                  (into {}))]
-    [(-> (get data "msgid")  read-escaped)
-     (-> (get data "msgstr") read-escaped)]))
+  [block-str]
+  (loop [lines (map str/trim (str/split-lines block-str))
+         result {}]
+    (if (empty? lines)
+      result
+      (let [[tag remainder] (str/split (first lines) #"\s" 2)
+            lines (concat [remainder] (rest lines))
+            parser (get PO_TAGS tag default-parser)
+            [k v rest] (parser lines)]
+        (recur rest (if v (assoc result k v) result))))))
 
 
 (defn- ->kv [block]
@@ -74,6 +117,7 @@ msgstr \"\"
   (->> (str/split (slurp file) #"\n\n")
        (drop 1) ;; Header meta data
        (map parse-block)
+       (map ->kv)
        (into {})))
 
 
