@@ -1,6 +1,7 @@
 (ns kasta.i18n
   (:import [java.nio.file Paths])
   (:require [clojure.string :as str]
+            [clojure.java.io :as io]
 
             [kasta.i18n.scan :as scan]
             [kasta.i18n.po :as po]))
@@ -14,7 +15,7 @@
 
 (def PO-DIR (or (System/getenv "KASTA_I18N_DIR")
                 (System/getProperty "kasta.i18n.dir")
-                "resources/i18n"))
+                "i18n"))
 
 
 ;;; Language switch
@@ -33,7 +34,7 @@
   (memoize
     (fn [lang]
       (let [path (Paths/get PO-DIR (into-array [(str lang ".po")]))]
-        (po/read-po (str path))))))
+        (po/read-po (io/resource (str path)))))))
 
 
 (defn get-trans [lang input]
