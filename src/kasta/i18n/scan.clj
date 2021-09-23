@@ -192,8 +192,8 @@
 
 
 (defn msgmerge! [po-target pot-source]
-  (exec! @msgmerge-path
-    "--update" "--backup=off" "--no-wrap" (file->path po-target) (file->path pot-source)))
+  (exec! @msgmerge-path "--update" "--backup=off" "--no-wrap" "--sort-output"
+    (file->path po-target) (file->path pot-source)))
 
 
 (defn msguniq! [pot-source]
