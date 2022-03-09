@@ -39,12 +39,13 @@
         parsed   (s/conform ::specs/ns-form (rest ns-form))
         requires (filter #(= :require (first %)) (:ns-clauses parsed))
         requires (mapcat (comp :body second) requires)
-        aliases  (->> requires
-                      (map (comp second second))
-                      (map (juxt #(-> % :options :as) #(-> % :lib second)))
-                      (filterv #(every? some? %))
-                      ;; map deduplicates aliases
-                      (into {}))]
+        aliases  (into {}
+                   (for [libspec requires
+                         :let [body (-> libspec second second)
+                               lib  (:lib body)
+                               as   (:as (:options body))]
+                         :when as]
+                     [as lib]))]
     aliases))
 
 
@@ -159,12 +160,16 @@
 
 (defn find-exe [exe]
   (or (reduce (fn [_ path]
-                (when (.exists (io/file (str path exe)))
-                    (reduced (str path exe))))
-          nil
-          ["/usr/local/opt/gettext/bin/"
-           "/usr/local/bin/"
-           "/usr/bin/"])
+                (let [f (io/file path exe)]
+                  (when (.exists f)
+                    (reduced (.getAbsolutePath f)))))
+        nil
+        (into ["/usr/local/opt/gettext/bin/"
+               "/usr/local/bin/"
+               "/opt/homebrew/bin/"
+               "/usr/bin/"]
+          (-> (System/getenv "PATH")
+              (.split ":"))))
       exe))
 
 
@@ -204,6 +209,8 @@
 
 
 (defn update-codebase! [dirs po-target]
+  (when-not (.exists (io/file po-target))
+    (spit po-target po/PO-INITIAL))
   (let [tmp (File/createTempFile "template" ".pot")]
     (scan-codebase! dirs {:template-file tmp})
     (msguniq! tmp)

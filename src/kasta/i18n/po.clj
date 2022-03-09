@@ -23,12 +23,18 @@
 
 ;;; Generation
 
-(def po-title
-  "# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR Free Software Foundation, Inc.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-msgid \"\"
+(def PO-INITIAL ;; used in kasta.i18n.scan/update-codebase!
+  "msgid \"\"
+msgstr \"\"
+\"Content-Type: text/plain; charset=UTF-8\\n\"
+\"Language: en\\n\"
+\"Plural-Forms: nplurals=2; plural=(n != 1);\\n\"
+
+")
+
+
+(def PO-TITLE
+  "msgid \"\"
 msgstr \"\"
 \"PO-Revision-Date: %s\\n\"
 \"Content-Type: text/plain; charset=UTF-8\\n\"
@@ -40,7 +46,7 @@ msgstr \"\"
   (let [entries (->> results
                      (mapcat #(map vector (repeat (:filename %)) (:strings %))))]
     (str
-      (format po-title (Instant/now))
+      (format PO-TITLE (Instant/now))
       (str/join "\n"
         (for [[filename entry] entries]
           (str
