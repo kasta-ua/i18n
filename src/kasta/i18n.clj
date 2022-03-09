@@ -30,11 +30,17 @@
 
 ;;; Finding translations
 
+(def TRANSLATIONS (atom {}))
+
+
 (def read-translations
-  (memoize
-    (fn [lang]
-      (let [path (Paths/get PO-DIR (into-array [(str lang ".po")]))]
-        (po/read-po (io/resource (str path)))))))
+  (fn [lang]
+    (if-let [trans (find @TRANSLATIONS lang)]
+      (val trans)
+      (let [path (Paths/get PO-DIR (into-array [(str lang ".po")]))
+            trans (po/read-po (io/resource (str path)))]
+        (swap! TRANSLATIONS assoc lang trans)
+        trans))))
 
 
 (defn get-trans [lang input]
