@@ -3,6 +3,7 @@
   (:require [clojure.walk :as walk]
             [clojure.java.io :as io]
             [clojure.spec.alpha :as s]
+            [clojure.core.specs.alpha :as specs]
 
             [kasta.i18n.po :as po]))
 
@@ -35,7 +36,7 @@
 
 (defn get-ns-aliases [ns-form]
   (let [ns-form  (walk/prewalk reader-cond-unifier ns-form)
-        parsed   (s/conform :cljs.core.specs.alpha/ns-form (rest ns-form))
+        parsed   (s/conform ::specs/ns-form (rest ns-form))
         requires (filter #(= :require (first %)) (:ns-clauses parsed))
         requires (mapcat (comp :body second) requires)
         aliases  (->> requires
