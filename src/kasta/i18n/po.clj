@@ -28,6 +28,7 @@
 msgstr \"\"
 \"Content-Type: text/plain; charset=UTF-8\\n\"
 \"Language: en\\n\"
+# Look for a suitable form at https://www.gnu.org/software/gettext/manual/html_node/Plural-forms.html
 \"Plural-Forms: nplurals=2; plural=(n != 1);\\n\"
 
 ")
