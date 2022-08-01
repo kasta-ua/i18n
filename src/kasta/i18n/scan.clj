@@ -37,7 +37,7 @@
   (delay
     (try
       (s/describe :cljs.core.specs.alpha/ns-form)
-      :cljs.core.specs.alpha:cljs-specs/ns-form
+      :cljs.core.specs.alpha/ns-form
       (catch Exception e
         (if (.startsWith (.getMessage e) "Unable to resolve spec")
           :clojure.core.specs.alpha/ns-form
@@ -58,7 +58,7 @@
 (defn setup-ns
   "Whole purpose of setup-ns is to return ns which contains necessary aliases so
   that ::ns/keyword will work."
-  [file ns-form]
+  [ns-form]
   (let [inner-ns (create-ns 'kasta.i18n.inner)]
 
     ;; remove existing aliases
@@ -104,7 +104,7 @@
 
         rdr        (-> file io/reader java.io.PushbackReader.)
         first-form (rread rdr)
-        edn        (binding [*ns* (setup-ns file first-form)]
+        edn        (binding [*ns* (setup-ns first-form)]
                      (->> (repeatedly #(rread rdr))
                           (take-while #(not= % ::eof))
                           (into [first-form])))]
