@@ -3,7 +3,6 @@
   (:require [clojure.walk :as walk]
             [clojure.java.io :as io]
             [clojure.spec.alpha :as s]
-            [clojure.core.specs.alpha :as specs]
 
             [kasta.i18n.po :as po]))
 
@@ -34,18 +33,25 @@
     form))
 
 
+(def conform-spec
+  (delay
+    (try
+      (s/describe :cljs.core.specs.alpha/ns-form)
+      :cljs.core.specs.alpha:cljs-specs/ns-form
+      (catch Exception e
+        (if (.startsWith (.getMessage e) "Unable to resolve spec")
+          :clojure.core.specs.alpha/ns-form
+          (throw e))))))
+
+
 (defn get-ns-aliases [ns-form]
-  (let [ns-form  (walk/prewalk reader-cond-unifier ns-form)
-        parsed   (s/conform ::specs/ns-form (rest ns-form))
-        requires (filter #(= :require (first %)) (:ns-clauses parsed))
-        requires (mapcat (comp :body second) requires)
-        aliases  (into {}
-                   (for [libspec requires
-                         :let [body (-> libspec second second)
-                               lib  (:lib body)
-                               as   (:as (:options body))]
-                         :when as]
-                     [as lib]))]
+  (let [ns-data   (walk/prewalk reader-cond-unifier ns-form)
+        ns-parsed (s/conform @conform-spec (rest ns-data))
+        aliases   (for [[_ {:keys [clause body]}]     (:ns-clauses ns-parsed)
+                        :when                         (= :require clause)
+                        [_ [_ {:keys [lib options]}]] body
+                        :when                         (:as options)]
+                    [(:as options) lib])]
     aliases))
 
 
