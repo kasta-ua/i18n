@@ -125,8 +125,8 @@
 
 (defn get-files [dir]
   (->> (file-seq (io/file dir))
-       (filter source-file?)
-       (filter #(.exists %))))
+       (filter #(and (source-file? %)
+                     (.exists %)))))
 
 
 (defn extract-strings [file]
@@ -145,10 +145,12 @@
 
 
 (defn scan-files [dirs]
-  (->> (mapcat get-files dirs)
-       (map extract-strings)
-       (filter (comp seq :strings))
-       (sort-by :filename)))
+  (sort-by :filename
+    (for [dir  dirs
+          file (get-files dir)
+          :let [entry (extract-strings file)]
+          :when (seq (:strings entry))]
+      entry)))
 
 
 (defn scan-codebase! [dirs
