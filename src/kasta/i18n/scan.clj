@@ -36,10 +36,12 @@
 (def conform-spec
   (delay
     (try
+      (require 'cljs.core.specs.alpha)
       (s/describe :cljs.core.specs.alpha/ns-form)
       :cljs.core.specs.alpha/ns-form
       (catch Exception e
-        (if (.startsWith (.getMessage e) "Unable to resolve spec")
+        (if (or (.startsWith (.getMessage e) "Could not locate cljs/core/specs/alpha__init.class") ; require failed
+                (.startsWith (.getMessage e) "Unable to resolve spec"))                            ; s/describe failed
           :clojure.core.specs.alpha/ns-form
           (throw e))))))
 
